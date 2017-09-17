@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<title>Examples移动端</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0"/>
+	<style>
+	*{
+		margin:0;
+		padding: 0;
+		font-family: 微软雅黑;
+		-webkit-tap-highlight-color:transparent;
+	}
+	html{height: 100%;}
+	body{
+		background: url('img/22567.jpg') no-repeat;
+		background-size:cover;
+		height:100%;
+	}
+	#ng-app{
+		width:100%;
+		height: 100%;
+		margin:0 auto;
+		position: relative;
+	}
+	.ng-app{
+		background: url('img/22567.jpg') no-repeat;
+	}
+
+	#app{
+		width:100%;
+		/*height:500px;*/
+		/*-webkit-transform:translate(-50%,0);*/
+		background:url("img/bg.png");
+		position:relative;
+		margin-top:100px;
+		/**margin:0 auto;**/
+	}
+	#ng-app a{
+		width:10%;
+		/*height:50px;
+*/		display: inline-block;
+		position:absolute;
+	}
+
+	#score{
+		width:300px;height:40px;
+		margin:0 auto;	text-align: center;line-height: 40px;
+		background:#ccc;border-radius: 4px;height:40px;
+		display: none;
+	}
+
+	#poPup{
+		width:320px;
+		height:200px;
+		background:#94c64d;
+		position:absolute;
+		z-index: 1000;
+		border-radius: 8px;
+		border:1px solid blue;
+		text-align:center;
+		opacity: 0.8;
+		left:50%;top:50%;
+		margin-left:-160px;
+		margin-top:-100px;
+	}
+	
+	#btn{
+		margin-top:60px;
+		width:80px;height:40px;
+		background: #e2efd1;
+		outline: none;border:none;
+		cursor: pointer;
+	}
+	
+	#h2title{
+		font-family: 微软雅黑;
+		color:#eff21c;
+
+	}
+
+	#historyScore{
+		margin-top:20px;
+	}
+
+	.red{
+		background: url('img/58.gif') no-repeat;
+	}
+	.green{
+		background: url('img/107.gif') no-repeat;
+	}
+	.blue{
+		background: url('img/57.gif') no-repeat;
+	}
+	.white{
+		background: url('img/66.jpg') no-repeat;
+	}
+	.purple{
+		background: url('img/99.jpg') no-repeat;
+	}
+	
+	</style>
+<script>
+
+</script>
+</head>
+<body>
+
+ <div id="ng-app">
+ 		<div id="score"><span id="aimScore"></span><span id="level"></span>当前分数:<span id="curScor">0</span></div>
+ </div>
+
+ <script>
+ 	/**
+ 	 * 程序入口
+ 	 * 
+ 	 */
+ 	
+ 	(function(){
+ 		var oNum=100;	  //方块个数
+ 		localStorage.level=1;//关卡初始化；
+ 	    localStorage.curScor=0;//历史最高分数
+ 		var ngApp=document.getElementById('ng-app');
+ 		/**
+ 		 * 获取历史最高分
+ 		 */
+ 		if(localStorage.score)
+		{
+			var oHisScore='历史最高分:'+localStorage.score;
+			var starObj=popUp("开始游戏",ngApp,oHisScore);
+		}
+ 		else
+		{
+			localStorage.score=0;
+			var oHisScore='历史最高分:'+0;
+			var starObj=popUp("开始游戏",ngApp,oHisScore);
+		}
+
+
+		/**
+		 * 
+		 * 进入游戏弹出框
+		 */
+ 		var oBtn=document.getElementById('btn');
+ 		oBtn.onclick=function()
+ 		{
+ 			ngApp.removeChild(starObj);
+ 			var oAim=document.getElementById('aimScore');
+ 			var n=parseInt(localStorage.level);
+ 			oAim.innerHTML="目标分数:"+(n*(n+1)/2)*1000+" ";
+ 			mainGame(oNum,localStorage.level);
+ 		}
+ 	})();
+ 	 
+
+
+
+ 	/**
+ 	 * 主程序
+ 	 * @param  {Number} oNum [方块总个数]
+ 	 * @return {[type]}      [description]
+ 	 */
+ 	 function mainGame(oNum)
+ 	 {
+
+ 	 	var yourScore=0;	//一局获得的分数
+ 	 	var oLeve=document.getElementById('level');
+ 	 	oLeve.innerHTML="关卡"+localStorage.level+" ";
+
+
+ 	    var oScore=document.getElementById('score')
+ 	    var oCurScor=document.getElementById('curScor')
+ 	 	var oDiv=document.createElement("div");
+ 	    var ngApp=document.getElementById('ng-app');
+ 	    var oW=window.screen.width;
+ 	    oDiv.id='app';
+
+ 	    ngApp.appendChild(oDiv);
+
+ 	    var oApp=document.getElementById('app');
+ 	    var oA=oApp.getElementsByTagName('a');
+ 	    oScore.style.display="block";
+
+ 	    var blockWidth=Math.floor(window.screen.width/10);
+ 	    /**
+ 	     * 进程1：加载方块
+ 	     */
+ 	    aStar(oApp,oNum,blockWidth);
+
+
+ 	    	/**
+ 	    	 * 通过事件委托给每个方块绑定点击事件
+ 	    	 * @param  {[type]} event){			var ev            [description]
+ 	    	 * @return {[type]}                [description]
+ 	    	 */
+		 	oApp.addEventListener('click',function(event){
+			var ev = event||window.event; 
+			var target=ev.target||ev.srcElement;
+			if(target.nodeName.toLowerCase()=='a')
+			{
+				var x=parseInt(target.style.left)/blockWidth;
+				var y=parseInt(target.style.top)/blockWidth;
+
+				/**
+				 * 进程2：加载搜索模块
+				 * @type {[type]}
+				 */
+				var result=DfsData(x,y,target.data,oA);
+
+
+				/**
+				 * 进程3：获取搜索结果
+				 */
+				if(result)
+				{
+					removeStar(result,oA);//删除方块
+
+					/**
+					 * 方块重排
+					 */
+					renewDir(oA);
+					/**
+					 * 检查是否还有可以点击的方块
+					 * @type {[type]}
+					 */
+					var num=isEnd(oA);
+					
+					if(num==-1)
+					{
+						yourScore+=score(result.length,num);
+						oCurScor.innerHTML=yourScore+parseInt(localStorage.curScor);
+					}
+					else
+					{
+						yourScore+=score(result.length,num);
+						oCurScor.innerHTML=yourScore+parseInt(localStorage.curScor);
+						var n=parseInt(localStorage.level);
+						var oLeveValue=(n*(n+1)/2)*1000;
+						if(parseInt(oCurScor.innerHTML)>=oLeveValue)
+						{
+							localStorage.curScor=parseInt(oCurScor.innerHTML);
+							// var starObj=popUp("进入下一关",ngApp);
+							localStorage.level++;
+							
+							// var oHisScore=document.getElementById('historyScore');
+							var oHisScore="本关剩余星星数:"+num;
+							var starObj=popUp("进入下一关",ngApp,oHisScore);
+							var oBtn1=document.getElementById('btn');
+					 		oBtn1.onclick=function()
+					 		{
+					 			var oAim=document.getElementById('aimScore');
+ 								var n=parseInt(localStorage.level);
+ 								oAim.innerHTML="目标分数:"+(n*(n+1)/2)*1000+" ";
+					 			ngApp.removeChild(starObj);
+					 			ngApp.removeChild(oApp);
+					 			mainGame(oNum,localStorage.level);
+					 		}
+						}
+						else
+						{
+							var oHisScore="游戏结束";
+							popUp("重新开始",ngApp,oHisScore);
+							var oBtn1=document.getElementById('btn');
+							oBtn1.onclick=null;
+							oBtn1.onclick=function()
+							{
+								window.location.reload();
+							}
+						}
+
+						if(parseInt(oCurScor.innerHTML)>localStorage.score)
+						{
+							localStorage.score=yourScore;
+						}
+					}
+					
+				}
+				
+			}
+
+			},false);
+ 	 }
+
+ 	 
+ 	 
+
+ 
+ function aStar(obj,oNum,oWidth)
+ {
+	 for(var i=0;i<oNum;i++)
+	 {
+	 	var oStar=document.createElement('a');
+	 	var oRgb=parseInt(Math.random()*5);
+	 	oStar.data=oRgb;
+	 	switch(oRgb)
+	 	{
+	 		case 0:
+	 		oStar.className="red";
+	 		
+	 		break;
+	 		case 1:
+	 		oStar.className="green";
+	 		
+	 		break;
+	 		case 2:
+	 		oStar.className="blue";
+	 	
+	 		break;
+	 		case 3:
+	 		oStar.className="white";
+	 		break;
+	 		case 4:
+	 		oStar.className="purple";
+	 		break;
+	 	}
+	 	// oStar.style.width==oWidth+'px';
+	 	oStar.style.height=oWidth+'px';
+	 	obj.appendChild(oStar);
+	 	
+	 	oStar.style.left=i%10*oWidth+'px';
+	 	oStar.style.top=Math.floor(i*0.1)*oWidth+'px';
+	 }
+}
+
+
+function DfsData(x,y,flag,obj)
+{
+	var dirArr=[];
+	var ox=x;
+	var oy=y;
+	var dir=[[0,1],[1,0],[0,-1],[-1,0]];
+	DFS(x,y,flag);
+	function DFS(x,y,flag)
+	{
+		obj[y*10+x].data=-1;
+		for(var i=0;i<4;i++)
+		{
+			var nx=x+dir[i][0];
+			var ny=y+dir[i][1]
+			if((nx>=0&&nx<=9)&&(ny>=0&&ny<=9))	
+			{
+				if(obj[ny*10+nx].data===flag)
+				{
+					var otemp=ny*10+nx;
+					dirArr.push(otemp);
+					DFS(nx,ny,flag);
+				}
+			}
+		}
+	}
+	if(dirArr.length>=1)
+	{
+		dirArr.push(y*10+x);
+		return dirArr;
+	}
+	else
+	{
+		obj[oy*10+ox].data=flag;
+		return 0;
+	}
+}
+
+function removeStar(arr,obj)
+{
+
+	for(var i=0;i<arr.length;i++)
+	{
+		var curLength=obj.length;
+		obj[arr[i]].style.display="none";
+	} 
+	return 0;
+}
+
+/**
+ * [renewDir description]
+ * @return {[type]} [description]
+ */
+function renewDir(obj)
+{
+	var tempArrLength=[];//各个列的长度数组
+	var temp=0;//偏移值
+	for(var i=0;i<10;i++)
+	{
+		var length=0;//长度值
+		if(tempArrLength[i-1]==0&&i>0)
+		{
+			temp++;
+		}
+		for(var j=9;j>=0;j--)
+		{
+			
+			if(obj[j*10+i].data==-1)
+			{
+				for(var t=j-1;t>=0;t--)
+				{
+					if(obj[t*10+i].data>-1)
+					{
+						obj[j*10+i-temp].data=obj[t*10+i].data;
+						obj[t*10+i].data=-1;
+						obj[j*10+i-temp].className=obj[t*10+i].className;
+						obj[t*10+i].style.display="none";
+						obj[j*10+i-temp].style.display="block";
+						length++;
+						break;
+					}
+				}
+			}
+			else
+			{
+				if(temp>0)
+				{
+					obj[j*10+i-temp].data=obj[j*10+i].data;
+					obj[j*10+i].data=-1;
+					obj[j*10+i-temp].className=obj[j*10+i].className;
+					obj[j*10+i].style.display="none";
+					obj[j*10+i-temp].style.display="block";	
+				}
+				length++;
+			}
+		}
+		tempArrLength[i]=length;
+	}
+	return tempArrLength;
+}
+
+function isEnd(obj)
+{
+	var flag=0;
+	var starNum=0
+	for(var i=0;i<10;i++)
+	{
+		for(var j=0;j<10;j++)
+		{	
+			if(obj[i*10+j].data>-1)
+			{
+				starNum++;
+				var oRes=serchDom(j,i,obj[i*10+j].data,obj);
+				if(oRes!=-1)
+				{
+					flag=1;
+					break;
+				}
+			}
+		}
+		if(flag==1)
+		{
+			break;
+		}
+	}
+	if(flag==0)
+	{
+		//alert("游戏结束,剩余"+starNum+"星星");
+		return starNum;
+	}else{
+		return -1;
+	}
+}
+function serchDom(x,y,flag,obj)
+{
+	// var oA=obj;
+	var arr=[[x+1,y],[x-1,y],[x,y+1],[x,y-1]]
+	for(var i=0;i<4;i++)
+	{
+		if(ceshi(arr[i][0],arr[i][1],obj[y*10+x].data)!=-1)
+		{
+			return ceshi(arr[i][0],arr[i][1],obj[y*10+x].data);
+		}
+	}
+
+
+	function ceshi(x,y,flag)
+	{
+
+		if((x>=0&&x<=9)&&(y>=0&&y<=9))
+		{
+			if(obj[y*10+x].data==flag)
+			{
+				return x+','+y;
+			}
+			else
+			{
+				return -1;
+			}
+		}
+		else
+		{
+			return -1;
+		}
+	}
+	return -1;
+}
+
+
+function score(scoreNum,num)
+{
+	if(num==-1)
+	{
+		return scoreNum*scoreNum*4;
+	}
+	else
+	{	
+		if(num<=10)
+		return scoreNum*scoreNum*4+((10-num)*300);
+		else
+		return scoreNum*scoreNum*4	
+	}
+}
+
+function popUp(str,obj,str2)
+{
+	var oDiv=document.createElement('div');
+	oDiv.id="poPup";
+	oDiv.innerHTML="<h2 id='h2title'>消灭星星</h2><div>"+str2+"</div><button id='btn'>"+str+"</button>";
+	obj.appendChild(oDiv);
+	return oDiv;
+}
+</script>   
+</body>
+</html>
